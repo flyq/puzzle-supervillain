@@ -69,6 +69,7 @@ fn main() {
     puzzle(PUZZLE_DESCRIPTION);
 
     let public_keys: Vec<(G1Affine, G2Affine)> = from_file("public_keys.bin");
+    println!("public keys: {:?}", public_keys);
 
     public_keys
         .iter()
