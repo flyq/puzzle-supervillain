@@ -69,7 +69,6 @@ fn main() {
     puzzle(PUZZLE_DESCRIPTION);
 
     let public_keys: Vec<(G1Affine, G2Affine)> = from_file("public_keys.bin");
-    println!("public keys: {:?}", public_keys);
 
     public_keys
         .iter()
@@ -81,9 +80,28 @@ fn main() {
 
     /* Enter solution here */
 
-    let new_key = G1Affine::zero();
-    let new_proof = G2Affine::zero();
-    let aggregate_signature = G2Affine::zero();
+    let sk = Fr::from(1); // it can be any Fr element
+    let pubkey = G1Affine::generator().mul(sk).into_affine();
+    let sign = bls_sign(sk, message);
+    let proof = pok_prove(sk, new_key_index);
+
+    // sum_pubkeys = Σ pubkey
+    // sum_proofs = Σ (new_key_index + 1) / (i + 1) * proof
+    let (sum_pubkeys, sum_proofs) = public_keys.iter().enumerate().fold(
+        (G1Affine::zero(), G2Affine::zero()),
+        |(acc_pubkey, acc_proof), (index, (pubkey, proof))| {
+            (
+                (acc_pubkey + pubkey).into_affine(),
+                (acc_proof
+                    + proof.mul(Fr::from(new_key_index as u64 + 1) / (Fr::from(index as u64 + 1))))
+                .into_affine(),
+            )
+        },
+    );
+
+    let new_key = (pubkey - sum_pubkeys).into_affine();
+    let new_proof = (proof - sum_proofs).into_affine();
+    let aggregate_signature = sign;
 
     /* End of solution */
 
